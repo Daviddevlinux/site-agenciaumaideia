@@ -1,43 +1,26 @@
-name: Docker Image CI
+name: Snyk Security Scan
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-
-  build:
-
-    runs-on: self-hosted
+  snyk:
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build -t daviddevlinux/agenciaumaideia:latest .
-      
-    #- name: Push the Docker image
-      #run: docker push daviddevlinux/agenciaumaideia:latest
+      - uses: actions/checkout@v3
 
-  deploy:
-     
-    runs-on: self-hosted
-    needs: build
-    steps:
-      - name: Remove existing containers
-        run: |
-          if [ "$(docker ps -aq)" ]; then
-           docker rm $(docker ps -aq) --force
-          else
-            echo "No containers to remove."
-          fi
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-      - name: Run Docker Container
-        run: docker run -dti --name web-server -p 80:80 daviddevlinux/agenciaumaideia:latest
+      - name: Install dependencies
+        run: npm install
 
-      - name: Cleanup Docker
-        run: docker system prune --force
-    
-
-
+      - name: Run Snyk test
+        uses: snyk/actions/node@v1
+        env:
+          SNYK_TOKEN: "11b56f20-d170-4934-8349-b5a38c762fc8"
+        with:
+          args: test
