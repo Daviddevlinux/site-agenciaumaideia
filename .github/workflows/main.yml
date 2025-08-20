@@ -1,0 +1,17 @@
+name: Teste SSH
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          # Se a chave tiver senha:
+          # passphrase: ${{ secrets.SERVER_SSH_PASSPHRASE }}
+          script: |
+            echo "ok em $(hostname -f)"
+            whoami
+            docker --version || true
