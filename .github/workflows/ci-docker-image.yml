@@ -1,26 +1,17 @@
-name: Snyk Security Scan
-
-on:
-  workflow_dispatch:
-
+name: Teste SSH
+on: workflow_dispatch
 jobs:
-  snyk:
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: appleboy/ssh-action@v1.0.0
         with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run Snyk test
-        uses: snyk/actions/node@v1
-        env:
-          SNYK_TOKEN: "11b56f20-d170-4934-8349-b5a38c762fc8"
-        with:
-          args: test
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          # Se a chave tiver senha:
+          # passphrase: ${{ secrets.SERVER_SSH_PASSPHRASE }}
+          script: |
+            echo "ok em $(hostname -f)"
+            whoami
+            docker --version || true
