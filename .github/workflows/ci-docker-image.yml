@@ -1,17 +1,39 @@
-name: Teste SSH
-on: workflow_dispatch
+name: Frontend - Deploy
+
+on:
+  push:
+    branches:
+      - main
+
 jobs:
-  test:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: appleboy/ssh-action@v1.0.0
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🐳 Login no Docker Registry (CI)
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+
+      - name: 🏗️ Build da imagem Docker
+        run: docker build -t ${{ secrets.REGISTRY_URL }}/meu-front:${{ github.sha }} .
+
+      - name: 📤 Push da imagem
+        run: docker push ${{ secrets.REGISTRY_URL }}/meu-front:${{ github.sha }}
+
+      - name: 🚀 Deploy remoto via SSH
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          # Se a chave tiver senha:
+          # Se a chave tiver senha, descomente:
           # passphrase: ${{ secrets.SERVER_SSH_PASSPHRASE }}
+          script_stop: true
           script: |
-            echo "ok em $(hostname -f)"
-            whoami
-            docker --version || true
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+
+            docker pull ${{ secrets.REGISTRY_URL }}/meu-front:${{ github.sha }}
+            docker stop meu-front || true && docker rm meu-front || true
+            docker run -d --name meu-front -p 80:80 ${{ secrets.REGISTRY_URL }}/meu-front:${{ github.sha }}
